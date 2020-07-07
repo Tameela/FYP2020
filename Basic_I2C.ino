@@ -41,6 +41,51 @@ void setup() {
     Serial.println(status);
     while(1) {}
   }
+  // calibrating accelerometer
+    Serial.println("Starting Accelerometer Calibration");
+    IMU.calibrateAccel();
+    //Face the sensor in one direction
+    Serial.println("Switch");
+    delay(5000);
+    //Face the sensor in another direction
+    IMU.calibrateAccel();
+    Serial.println("Switch");
+    delay(5000);
+    //Face the sensor in another direction
+    IMU.calibrateAccel();
+    Serial.println("Switch");
+    delay(5000);
+    //Face the sensor in another direction
+    IMU.calibrateAccel();
+    Serial.println("Switch");
+    delay(5000);
+    //Face the sensor in another direction
+    IMU.calibrateAccel();
+    Serial.println("Switch");
+    delay(5000);
+    //Face the sensor in another direction
+    IMU.calibrateAccel();
+    Serial.println("Done");
+    
+    value = IMU.getAccelBiasX_mss();
+    Serial.print("Accel bias x:");
+    Serial.println(value); 
+    value = IMU.getAccelScaleFactorX();
+    Serial.print("Accel scale x:");
+    Serial.println(value); 
+    value = IMU.getAccelBiasY_mss();
+    Serial.print("Accel bias y:");
+    Serial.println(value); 
+    value = IMU.getAccelScaleFactorY();
+    Serial.print("Accel scale y:");
+    Serial.println(value); 
+    value = IMU.getAccelBiasZ_mss();
+    Serial.print("Accel bias z:");
+    Serial.println(value); 
+    value = IMU.getAccelScaleFactorZ();
+    Serial.print("Accel factor z:");
+    Serial.println(value);    
+    Serial.println("Done");
 }
 
 void loop() {
