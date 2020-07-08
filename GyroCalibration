@@ -30,6 +30,10 @@ IMU.readSensor();
       gyroCalibration_Y += IMU.getGyroY_rads();
       gyroCalibration_Z += IMU.getGyroZ_rads();
     }
+        Serial.print ("Bias Calibration Complete");
+    status = IMU.calibrateMag();
+    Serial.print ("\n");
+    Serial.print(status);
     float gyroBiasX =  gyroCalibration_X/1000;
     float gyroBiasY =  gyroCalibration_Y/1000;
     float gyroBiasZ =  gyroCalibration_Z/1000;
