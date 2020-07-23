@@ -220,32 +220,6 @@ void computeAngles()
   yaw = atan2f(q1*q2 + q0*q3, 0.5f - q2*q2 - q3*q3);
   anglesComputed = 1;
 }
-  
-  float getRoll() {
-        if (!anglesComputed) computeAngles();
-        return roll * 57.29578f;
-    }
-    float getPitch() {
-        if (!anglesComputed) computeAngles();
-        return pitch * 57.29578f;
-    }
-    float getYaw() {
-        if (!anglesComputed) computeAngles();
-        return yaw * 57.29578f + 180.0f;
-    }
-    float getRollRadians() {
-        if (!anglesComputed) computeAngles();
-        return roll;
-    }
-    float getPitchRadians() {
-        if (!anglesComputed) computeAngles();
-        return pitch;
-    }
-    float getYawRadians() {
-        if (!anglesComputed) computeAngles();
-        return yaw;
-    }
-
 
 // an MPU9250 object with the MPU-9250 sensor on I2C bus 0 with address 0x68
 MPU9250 IMU(Wire,0x68);
@@ -310,8 +284,6 @@ void loop() {
 
   update(gx, gy, gz, ax, ay, az, mx, my, mz);
   computeAngles();
-
-  getRoll();
 
   Serial.print(q0,6);
   Serial.print("\t");
