@@ -1,0 +1,137 @@
+  #include "MPU9250.h"
+
+  // an MPU9250 object with the MPU-9250 sensor on I2C bus 0 with address 0x68
+  MPU9250 IMU(Wire,0x68);
+  int status;
+  float value;
+  float offset1;
+  float az;
+  
+  void setup() {
+  // serial to display data
+  Serial.begin(115200);
+  while(!Serial) {}
+
+  // start communication with IMU 
+  status = IMU.begin();
+  if (status < 0) {
+    Serial.println("IMU initialization unsuccessful");
+    Serial.println("Check IMU wiring or try cycling power");
+    Serial.print("Status: ");
+    Serial.println(status);
+    while(1) {}
+  }
+  else {
+     // calibrating accelerometer
+    Serial.println("Starting Accelerometer Calibration");
+    IMU.calibrateAccel();
+    Serial.println("Switch");
+    delay(5000);
+    IMU.calibrateAccel();
+    Serial.println("Switch");
+    delay(5000);
+    IMU.calibrateAccel();
+    Serial.println("Switch");
+    delay(5000);
+    IMU.calibrateAccel();
+    Serial.println("Switch");
+    delay(5000);
+    IMU.calibrateAccel();
+    Serial.println("Switch");
+    delay(5000);
+    IMU.calibrateAccel();
+    Serial.println("Done");
+    // = -9.8;
+
+    //Gyroscope calibration
+     float gyroCalibration_X = 0;
+     float gyroCalibration_Y = 0;
+     float gyroCalibration_Z = 0;
+     offset1 = 0;
+    Serial.print("Calibrating Gyro... ");
+    IMU.readSensor();
+    for (int i = 0; i < 1000; i++) {     
+      gyroCalibration_X += IMU.getGyroX_rads();
+      gyroCalibration_Y += IMU.getGyroY_rads();
+      gyroCalibration_Z += IMU.getGyroZ_rads();
+      offset1 += IMU.getAccelZ_mss();
+    }
+        Serial.print ("Bias Calibration Complete");
+    status = IMU.calibrateMag();
+    Serial.print ("\n");
+    Serial.print(status);
+    float gyroBiasX =  gyroCalibration_X/1000;
+    float gyroBiasY =  gyroCalibration_Y/1000;
+    float gyroBiasZ =  gyroCalibration_Z/1000;
+    float offset1 = offset1/1000;
+    Serial.print("\n");
+    Serial.print("\t");
+    Serial.print("X: ");
+    Serial.print(gyroCalibration_X, 6);
+    Serial.print("\t");
+    Serial.print("Y: ");
+    Serial.print(gyroCalibration_Y, 6);
+    Serial.print("\t");
+    Serial.print("Z: ");
+    Serial.print(gyroCalibration_Z, 6);   
+
+    Serial.print("\n");
+    Serial.print("\t");
+    /*
+    Serial.print("X: ");
+    Serial.print(gyroBiasX, 6);
+    Serial.print("\t");
+    Serial.print("Y: ");
+    Serial.print(gyroBiasY, 6);
+    Serial.print("\t");
+    Serial.print("Z: ");
+    Serial.print(gyroBiasZ, 6);
+    */
+    IMU.setGyroBiasX_rads(gyroBiasX);
+    IMU.setGyroBiasY_rads(gyroBiasY);
+    IMU.setGyroBiasZ_rads(gyroBiasZ);
+  }
+}
+
+void loop() {
+  // read the sensor
+  IMU.readSensor();
+ 
+  // display the data
+  Serial.print(IMU.getAccelX_mss(),6);
+  Serial.print("\t");
+  Serial.print(IMU.getAccelY_mss(),6);
+  Serial.print("\t");
+  az=IMU.getAccelZ_mss();
+  if(az>0){
+    Serial.print(az+offset1);
+    Serial.println("\t");
+  }
+  else{
+  Serial.print(az-offset1);
+  Serial.println("\t");
+  }
+ 
+  
+ // Serial.print("Readings");
+  Serial.print("\t");
+  Serial.print(IMU.getGyroX_rads(),6);
+  Serial.print("\t");
+  Serial.print(IMU.getGyroY_rads(),6);
+  Serial.print("\t");
+  Serial.print(IMU.getGyroZ_rads(),6);
+  Serial.print("\t");
+  Serial.print("\n");
+  
+
+
+
+  /*Serial.print(IMU.getMagX_uT(),6);
+  Serial.print("\t");
+  Serial.print(IMU.getMagY_uT(),6);
+  Serial.print("\t");
+  Serial.print(IMU.getMagZ_uT(),6);
+  Serial.print("\t"); */
+  //Serial.println(IMU.getTemperature_C(),6);
+  delay(100);
+}
