@@ -1,0 +1,157 @@
+  
+/*
+Basic_I2C.ino
+Brian R Taylor
+brian.taylor@bolderflight.com
+Copyright (c) 2017 Bolder Flight Systems
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software 
+and associated documentation files (the "Software"), to deal in the Software without restriction, 
+including without limitation the rights to use, copy, modify, merge, publish, distribute, 
+sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is 
+furnished to do so, subject to the following conditions:
+The above copyright notice and this permission notice shall be included in all copies or 
+substantial portions of the Software.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING 
+BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND 
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, 
+DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*/
+
+#include "MPU9250.h"
+
+// an MPU9250 object with the MPU-9250 sensor on I2C bus 0 with address 0x68
+MPU9250 IMU(Wire,0x68);
+int status;
+float value;
+float offset;
+float looptime = 100;
+float X_Displacement = 0;
+float Y_Displacement = 0;
+float Z_Displacement = 0;
+float X_Displacement_prev = 0;
+float Y_Displacement_prev = 0;
+float Z_Displacement_prev = 0;
+float X_Accel = 0;
+float Y_Accel = 0;
+float Z_Accel = 0;
+float X_est = 0;
+float Y_est = 0;
+float Z_est = 0;
+float last_X = 0;
+float last_Y = 0;
+float last_Z = 0;
+float disp = 0;
+
+//Kalman filtering variables 
+double est1,est2; //Variables to store the filtered data 
+double last_est1 = 0;
+double last_est2 = 0;
+double process_noise = 1;
+double sensor_noise = 2;    // Change the value of sensor noise to get different KF performance
+
+void setup() {
+  // serial to display data
+  Serial.begin(115200);
+  while(!Serial) {}
+
+  // start communication with IMU 
+  status = IMU.begin();
+  if (status < 0) {
+    Serial.println("IMU initialization unsuccessful");
+    Serial.println("Check IMU wiring or try cycling power");
+    Serial.print("Status: ");
+    Serial.println(status);
+    while(1) {}
+  }
+  // calibrating accelerometer
+    Serial.println("Starting Accelerometer Calibration");
+    IMU.calibrateAccel();
+    Serial.println("Switch");
+    delay(5000);
+    IMU.calibrateAccel();
+    Serial.println("Switch");
+    delay(5000);
+    IMU.calibrateAccel();
+    Serial.println("Switch");
+    delay(5000);
+    IMU.calibrateAccel();
+    Serial.println("Switch");
+    delay(5000);
+    IMU.calibrateAccel();
+    Serial.println("Switch");
+    delay(5000);
+    IMU.calibrateAccel();
+    Serial.println("Done");
+
+    offset = -9.8;
+    Serial.println("Done");
+    delay(500);
+}
+
+void loop() {
+  float az;
+  // read the sensor
+  IMU.readSensor();
+  // display the data
+  X_Accel = IMU.getAccelX_mss();
+  X_est = Kalman(X_Accel, last_X);  //Filtered estimated measurement
+  X_Accel = last_X; //Use the filtered data 
+  last_X = X_est;  // store estimate as previous measurement for next cycle
+  X_Displacement_prev = X_Displacement;
+  X_Displacement = displacement(X_Accel, X_Displacement_prev, (looptime/100));
+  
+  Y_Accel = IMU.getAccelY_mss();
+  Y_est = Kalman(Y_Accel, last_Y);  //Filtered estimated measurement
+  Y_Accel = last_Y; //Use the filtered data 
+  last_Y = Y_est;  // store estimate as previous measurement for next cycle
+  Y_Displacement_prev = Y_Displacement;
+  Y_Displacement = displacement(Y_Accel, Y_Displacement_prev, (looptime/100));
+
+  Z_Accel = IMU.getAccelZ_mss();
+    if (Z_Accel < 0) {
+       Z_Accel = Z_Accel - offset;
+    }
+    else {
+       Z_Accel = Z_Accel + offset;
+    }
+  
+  Z_est = Kalman(Z_Accel, last_Z);  //Filtered estimated measurement
+  Z_Accel = last_Z; //Use the filtered data 
+  last_Z = Z_est;  // store estimate as previous measurement for next cycle
+  Z_Displacement_prev = Z_Displacement;
+  Z_Displacement = displacement(Z_Accel, Z_Displacement_prev, (looptime/100));
+
+  //Serial.print (X_Displacement, 6);
+  //Serial.print ("\t");
+  Serial.print (X_Accel, 6);
+  //Serial.print ("\t");
+  //Serial.print (Y_Displacement, 6);
+  Serial.print ("\t");
+  Serial.print (Y_Accel, 6);
+  //Serial.print ("\t");
+  //Serial.print (Z_Displacement, 6);
+  Serial.print ("\t");
+  Serial.print (Z_Accel, 6);
+  Serial.print ("\n");
+  delay(looptime);
+}
+
+//Kalman filter
+double Kalman(double rawdata, double prev_est){   
+  double a_priori_est, a_post_est, a_priori_var, a_post_var, kalman_gain;
+
+  a_priori_est = prev_est;  
+  a_priori_var = process_noise; 
+
+  kalman_gain = a_priori_var/(a_priori_var+sensor_noise);
+  a_post_est = a_priori_est + kalman_gain*(rawdata-a_priori_est);
+  a_post_var = (1- kalman_gain)*a_priori_var;
+  return a_post_est;
+}
+
+double displacement(double acceleration, double prev_displacement, double timestep) {
+  disp = prev_displacement + ((acceleration * (timestep * timestep))/2);
+  return disp;
+}
+
